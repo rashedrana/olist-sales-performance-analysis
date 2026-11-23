@@ -42,9 +42,32 @@ select.cbtn{appearance:none;padding-right:12px;max-width:100%}
 .chartbox{position:relative;height:300px}
 .chartbox.sm{height:262px}
 .note{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.55}
+.mapbox{position:relative;height:340px}
+.mapbox canvas{width:100%;height:100%;display:block;cursor:pointer}
+.maptip{position:absolute;pointer-events:none;background:#14201d;color:#fff;font-size:12px;font-weight:600;padding:6px 10px;border-radius:8px;opacity:0;transition:opacity .12s;white-space:nowrap;z-index:5}
+.maplegend{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);margin-top:6px}
+.maplegend .grad{flex:1;height:8px;border-radius:4px;background:linear-gradient(90deg,#e3f2ef,#0f766e)}
+.treemap{position:relative;height:300px;border-radius:8px;overflow:hidden}
+.tm-cell{position:absolute;overflow:hidden;border:2px solid #fff;border-radius:6px;color:#fff;padding:6px 8px;line-height:1.25;box-sizing:border-box}
+.tm-cell .tn{font-size:12px;font-weight:700}
+.tm-cell .tv{font-size:11px;opacity:.88}
+.heat .hrow{display:flex;align-items:center;gap:2px;margin-bottom:2px}
+.heat .hlab{width:32px;flex:none;color:var(--muted);font-weight:700;font-size:10.5px;text-align:right;padding-right:6px}
+.heat .hcell{flex:1;height:17px;border-radius:3px}
+.heat .hhour{display:flex;gap:2px;margin-left:38px;margin-bottom:4px;color:var(--muted);font-size:10.5px}
+.heat .hhour span{flex:1;text-align:center}
+.funnel{display:flex;flex-direction:column;gap:5px;padding:4px 0}
+.fstage{margin:0 auto;text-align:center;color:#fff;border-radius:8px;padding:7px 6px;line-height:1.3}
+.fstage .fv{font-size:16px;font-weight:800}
+.fstage .fl{font-size:11px;opacity:.92}
+.fconv{text-align:center;font-size:11px;color:var(--muted);font-weight:700}
+.cloud{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:2px 12px;padding:12px 6px;line-height:1.5;text-align:center;min-height:262px;align-content:center}
+.cloud span{font-weight:700;cursor:default}
+.srcgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px 22px;font-size:13px;line-height:1.6}
+.srcgrid a{color:var(--accent)}
 footer{color:var(--muted);font-size:12px;line-height:1.7;margin-top:18px}
 footer a{color:var(--accent)}
-@media (max-width:980px){ .kpis{grid-template-columns:repeat(3,1fr)} .controls,.grid2,.grid2b{grid-template-columns:1fr} }
+@media (max-width:980px){ .kpis{grid-template-columns:repeat(3,1fr)} .controls,.grid2,.grid2b,.srcgrid{grid-template-columns:1fr} }
 @media (max-width:560px){ .kpis{grid-template-columns:repeat(2,1fr)} }
 </style>
 </head>
@@ -156,10 +179,64 @@ footer a{color:var(--accent)}
     </div>
   </div>
 
+  <!-- ============ CHARTS ROW 5: CHOROPLETH + TREEMAP ============ -->
+  <div class="grid2b">
+    <div class="panel">
+      <h3 id="mapTitle">Choropleth — revenue by state</h3>
+      <div class="mapbox"><canvas id="mapCanvas"></canvas><div class="maptip" id="mapTip"></div></div>
+      <div class="maplegend"><span>R$ 0</span><div class="grad"></div><span id="mapMax"></span></div>
+      <div class="note">Colour = item revenue in the selected period and category (square-root scale, so small states stay visible). São Paulo alone (R$5.07M) outsells the bottom 24 states combined (R$4.84M), and 13 states each hold under 1% of revenue — yet basket size flips the map: average order value is highest in Paraíba (R$218) and lowest in São Paulo (R$125), because freight makes small baskets uneconomic far from the Southeast. Click a state to slice the dashboard to it. Boundaries: IBGE.</div>
+    </div>
+    <div class="panel">
+      <h3>Treemap — revenue by product category</h3>
+      <div class="treemap" id="treemap"></div>
+      <div class="note">Rectangle size = item revenue in the selected period and state. The top 15 of 74 categories hold 76.3% of all revenue; the remaining 59 categories share R$3.13M (23.7%). Click a top-12 category to slice the dashboard to it.</div>
+    </div>
+  </div>
+
+  <!-- ============ CHARTS ROW 6: HEATMAP + FUNNEL ============ -->
+  <div class="grid2b">
+    <div class="panel">
+      <h3>Heatmap — orders by weekday × hour of day</h3>
+      <div class="heat" id="heatmap"></div>
+      <div class="note" id="heatNote"></div>
+    </div>
+    <div class="panel">
+      <h3>Funnel — the order pipeline, all orders</h3>
+      <div class="funnel" id="funnel"></div>
+      <div class="note">Every order ever placed — this panel ignores the slicers by design, because the delivered-order scope would hide the leaks. 97.0% of orders end up delivered; the shipped → delivered gap is mostly orders still in transit at the October 2018 snapshot (1,107 with status “shipped”). Another 2,338 orders (2.4%) were neither delivered nor canceled at the snapshot — processing, invoiced, in transit or unavailable.</div>
+    </div>
+  </div>
+
+  <!-- ============ CHARTS ROW 7: WATERFALL + WORD CLOUD ============ -->
+  <div class="grid2b">
+    <div class="panel">
+      <h3 id="wfTitle">Waterfall — what moved revenue, 2017 → 2018</h3>
+      <div class="chartbox sm"><canvas id="wfChart"></canvas></div>
+      <div class="note">Delivered orders in the selected state (the period and category slicers do not apply — this panel is the 2017 → 2018 category bridge, and 2018 covers Jan–Aug purchases against the full 2017). The top 5 gaining and top 3 shrinking categories are shown individually; the other 66 categories are netted into one bar.</div>
+    </div>
+    <div class="panel">
+      <h3>Word cloud — what customers write in reviews</h3>
+      <div class="cloud" id="wordCloud"></div>
+      <div class="note">Word size = frequency across the 39,073 written comments left on delivered orders (Portuguese stopwords removed; 14,162 distinct words). The vocabulary is delivery-obsessed — <em>prazo</em> (deadline) 8,262 mentions, <em>antes</em> (early) 5,592, <em>chegou</em> (arrived) 5,396 — and comments mentioning <em>antes</em> average 4.69 stars, vs 3.60 for comments about the <em>produto</em> itself.</div>
+    </div>
+  </div>
+
+  <!-- ============ DATA SOURCE ============ -->
+  <div class="panel">
+    <h3>Data source</h3>
+    <div class="srcgrid">
+      <div><strong>Dataset:</strong> <a href="https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce" target="_blank" rel="noopener">Brazilian E-Commerce Public Dataset by Olist</a> (Kaggle), licence <strong>CC BY-NC-SA 4.0</strong> — downloaded from a public GitHub mirror and verified table by table against the canonical Kaggle release.</div>
+      <div><strong>Coverage:</strong> 99,441 orders · 112,650 order items · 103,886 payment rows · 99,224 reviews · 32,951 products · 3,095 sellers. Orders placed 4 Sep 2016 – 17 Oct 2018; customers in all 27 Brazilian states.</div>
+      <div><strong>Scope of the figures:</strong> delivered orders only — 96,478 of 99,441 (97.0%). The 625 canceled orders and the orders still in transit at the October 2018 snapshot are excluded, so purchase months run Sep 2016 – Aug 2018. Revenue is item price only; freight is reported separately (16.6% on top of item revenue).</div>
+      <div><strong>Boundaries &amp; model:</strong> state boundaries © IBGE (territorial meshes, simplified). The matching Power BI package — star schema (315,977 fact rows), DAX measures, page layout spec and 20 business questions, each answered with a different visual type — lives in this project under <code>dashboard/powerbi/</code>.</div>
+    </div>
+  </div>
+
   <footer>
     Built by <strong>Rashed Rana</strong> as Project 4 of his Power BI dashboard series.
     This web edition mirrors the Power BI report (star-schema model, DAX measures and page layout
-    in this project under <code>dashboard/powerbi/</code>); 14 business questions, each answered with a
+    in this project under <code>dashboard/powerbi/</code>); 20 business questions, each answered with a
     different Power BI visual type, are in <code>dashboard/powerbi/QUESTIONS.md</code>.
     Data: <a href="https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce" target="_blank" rel="noopener">Brazilian E-Commerce Public Dataset by Olist</a>
     (Kaggle, CC BY-NC-SA 4.0), downloaded from a public GitHub mirror and verified table by table
@@ -175,6 +252,7 @@ footer a{color:var(--accent)}
 
 <script>
 const DATA = /*__DATA__*/{};
+const BRAZIL = /*__GEO__*/[];
 const ACCENT = "#0f766e", AMBER = "#d97706";
 const MLAB = DATA.monthLabels, MONTHS = DATA.months;
 const CATNAME = c => c==="Other" ? "All other categories" : c.split("_").map(w=>w[0].toUpperCase()+w.slice(1)).join(" ");
@@ -358,11 +436,176 @@ function drawCum(){
       scales:{y:{ticks:{callback:v=>fmtR(v)}}, x:{grid:{display:false}, ticks:{maxTicksLimit:10}}},
       plugins:{legend:{display:false}, tooltip:{callbacks:{label:(t)=>fmtFull(t.parsed.y)+" cumulative"}}}}});
 }
+/* ---------- retrofit visuals (Q15-Q20) ---------- */
+const ZMATRIX = () => Array.from({length:7},()=>Array(24).fill(0));
+const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+const mixc = (a,b,t)=>{ const A=[1,3,5].map(i=>parseInt(a.substr(i,2),16)), B=[1,3,5].map(i=>parseInt(b.substr(i,2),16));
+  return `rgb(${A.map((v,i)=>Math.round(v+(B[i]-v)*t)).join(",")})`; };
+
+/* choropleth (custom canvas; IBGE state boundaries) */
+const mapCanvas = document.getElementById("mapCanvas"), mapTip = document.getElementById("mapTip");
+let mapFeat = [], mapSize = "", mapHover = null;
+function buildMapPaths(){
+  const dpr = window.devicePixelRatio || 1;
+  const W = mapCanvas.clientWidth, H = mapCanvas.clientHeight;
+  mapCanvas.width = Math.round(W*dpr); mapCanvas.height = Math.round(H*dpr);
+  const kx = 0.96; let minX=1e9, maxX=-1e9, minY=1e9, maxY=-1e9;
+  const conv = BRAZIL.map(f=>{ const polys = f.g[0]==="Polygon" ? [f.g[1]] : f.g[1];
+    return {uf:f.u, polys: polys.map(poly=>poly.map(ring=>ring.map(pt=>{
+      const x=pt[0]*kx, y=pt[1];
+      if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y;
+      return [x,y]; })))}; });
+  const sc = Math.min(W/(maxX-minX), H/(maxY-minY))*0.97;
+  const ox = (W-(maxX-minX)*sc)/2, oy = (H-(maxY-minY)*sc)/2;
+  mapFeat = conv.map(f=>{ const p = new Path2D();
+    f.polys.forEach(poly=>poly.forEach(ring=>{ ring.forEach((pt,i)=>{
+      const X=((pt[0]-minX)*sc+ox)*dpr, Y=((maxY-pt[1])*sc+oy)*dpr;
+      i ? p.lineTo(X,Y) : p.moveTo(X,Y); }); p.closePath(); }));
+    return {uf:f.uf, path:p}; });
+  mapSize = W+"x"+H+"x"+dpr;
+}
+function drawMap(){
+  if(!BRAZIL.length || !mapCanvas.clientWidth) return;
+  const key = mapCanvas.clientWidth+"x"+mapCanvas.clientHeight+"x"+(window.devicePixelRatio||1);
+  if(key!==mapSize || !mapFeat.length) buildMapPaths();
+  const dpr = window.devicePixelRatio || 1;
+  const ctx = mapCanvas.getContext("2d");
+  ctx.clearRect(0,0,mapCanvas.width,mapCanvas.height);
+  const revs = {}; let maxRev = 0;
+  DATA.states.forEach(s=>{ revs[s]=cell(selYear,s,selCat).rev; if(revs[s]>maxRev) maxRev=revs[s]; });
+  mapFeat.forEach(f=>{ const rev = revs[f.uf]||0, t = maxRev ? Math.sqrt(rev/maxRev) : 0;
+    ctx.fillStyle = mixc("#e3f2ef","#0f766e",t); ctx.fill(f.path,"evenodd");
+    ctx.lineWidth = dpr; ctx.strokeStyle = "#ffffff"; ctx.stroke(f.path);
+    if(f.uf===selState){ ctx.lineWidth = 2.5*dpr; ctx.strokeStyle = AMBER; ctx.stroke(f.path); }
+    if(mapHover===f.uf){ ctx.lineWidth = 1.5*dpr; ctx.strokeStyle = "#14201d"; ctx.stroke(f.path); } });
+  document.getElementById("mapMax").textContent = fmtR(maxRev);
+  document.getElementById("mapTitle").textContent =
+    `Choropleth — revenue by state · ${selYear==="ALL"?"2016–2018":selYear}${selCat==="ALL"?"":" · "+CATNAME(selCat)}`;
+}
+mapCanvas.addEventListener("mousemove", e=>{
+  const r = mapCanvas.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  const x = (e.clientX-r.left)*dpr, y = (e.clientY-r.top)*dpr;
+  const ctx = mapCanvas.getContext("2d");
+  const hit = mapFeat.find(f=>ctx.isPointInPath(f.path,x,y,"evenodd"));
+  const uf = hit ? hit.uf : null;
+  if(uf!==mapHover){ mapHover = uf; drawMap(); }
+  if(uf){ const rev = cell(selYear,uf,selCat).rev, tot = cell(selYear,"ALL",selCat).rev;
+    mapTip.textContent = `${DATA.stateNames[uf]} (${uf}) — ${fmtFull(rev)}${tot?` · ${(rev/tot*100).toFixed(1)}% of revenue`:""}`;
+    mapTip.style.left = Math.min(e.clientX-r.left+14, Math.max(0,mapCanvas.clientWidth-190))+"px";
+    mapTip.style.top = (e.clientY-r.top+12)+"px"; mapTip.style.opacity = 1; }
+  else mapTip.style.opacity = 0;
+});
+mapCanvas.addEventListener("mouseleave", ()=>{ mapHover = null; mapTip.style.opacity = 0; drawMap(); });
+mapCanvas.addEventListener("click", ()=>{ if(mapHover){ selState = mapHover; stateSel.value = selState; refresh(); } });
+
+/* treemap (squarified layout, DOM cells) */
+function squarify(items,x,y,w,h){
+  const total = items.reduce((a,i)=>a+i.v,0); if(!total || w<=0 || h<=0) return [];
+  const out = []; let row = [], rx=x, ry=y, rw=w, rh=h, rem=total;
+  const wsum = r=>r.reduce((a,i)=>a+i.v,0);
+  const worst = (r,side)=>{ const s = wsum(r); if(!s) return 1e18;
+    const mx = Math.max(...r.map(i=>i.v)), mn = Math.min(...r.map(i=>i.v));
+    return Math.max(side*side*mx/(s*s), (s*s)/(side*side*mn)); };
+  const lay = ()=>{ const s = wsum(row);
+    if(rw>=rh){ const cw = s/rem*rw; let cy = ry;
+      row.forEach(i=>{ const ch = i.v/s*rh; out.push(Object.assign({},i,{x:rx,y:cy,w:cw,h:ch})); cy += ch; });
+      rx += cw; rw -= cw; }
+    else { const ch = s/rem*rh; let cx = rx;
+      row.forEach(i=>{ const cw = i.v/s*rw; out.push(Object.assign({},i,{x:cx,y:ry,w:cw,h:ch})); cx += cw; });
+      ry += ch; rh -= ch; }
+    rem -= s; row = []; };
+  items.forEach(it=>{ if(row.length && worst([...row,it],Math.min(rw,rh)) > worst(row,Math.min(rw,rh))) lay(); row.push(it); });
+  if(row.length) lay();
+  return out;
+}
+function drawTreemap(){
+  const el = document.getElementById("treemap");
+  const W = el.clientWidth, H = el.clientHeight; if(!W) return;
+  const arr = DATA.catFull[`${selYear}|${selState}`] || DATA.allCategories.map(()=>0);
+  const pairs = DATA.allCategories.map((c,i)=>({c, v:arr[i]})).filter(p=>p.v>0).sort((a,b)=>b.v-a.v);
+  const items = pairs.slice(0,15).map(p=>({c:p.c, v:p.v}));
+  const rest = pairs.slice(15);
+  if(rest.length) items.push({c:"__OTHER__", v:rest.reduce((a,p)=>a+p.v,0), n:rest.length});
+  const tot = items.reduce((a,i)=>a+i.v,0);
+  const rects = squarify(items,0,0,W,H);
+  el.innerHTML = rects.map((r,i)=>{ const isO = r.c==="__OTHER__";
+    const name = isO ? `Other (${r.n} categories)` : CATNAME(r.c);
+    const col = isO ? "#a8a29e" : (r.c===selCat ? AMBER : mixc("#0f766e","#8fc6bd", Math.min(1,i/13)*0.85));
+    const big = r.w>86 && r.h>40, mid = r.w>52 && r.h>24;
+    const clickable = !isO && DATA.categories.includes(r.c);
+    return `<div class="tm-cell" data-cat="${isO?"":r.c}" title="${name}: ${fmtFull(r.v)} (${tot?(r.v/tot*100).toFixed(1):0}% of revenue)" style="left:${r.x.toFixed(1)}px;top:${r.y.toFixed(1)}px;width:${r.w.toFixed(1)}px;height:${r.h.toFixed(1)}px;background:${col};${clickable?"cursor:pointer":""}">${big?`<div class="tn">${name}</div><div class="tv">${fmtR(r.v)} · ${(r.v/tot*100).toFixed(1)}%</div>`:mid?`<div class="tn" style="font-size:10.5px">${name}</div>`:""}</div>`; }).join("");
+  el.querySelectorAll(".tm-cell").forEach(td=>{ const c = td.dataset.cat;
+    if(c && DATA.categories.includes(c)) td.onclick = ()=>{ selCat = c; catSel.value = c; refresh(); }; });
+}
+
+/* heatmap (weekday x hour grid) */
+function drawHeat(){
+  const m = DATA.whMatrix[`${selYear}|${selState}`] || ZMATRIX();
+  let max = 0; const pk = [0,0,0];
+  m.forEach((row,wd)=>row.forEach((v,hr)=>{ if(v>max){ max = v; pk[0]=wd; pk[1]=hr; pk[2]=v; } }));
+  let html = `<div class="hhour">${Array.from({length:24},(_,h)=>`<span>${h%3===0?h:""}</span>`).join("")}</div>`;
+  m.forEach((row,wd)=>{ html += `<div class="hrow"><div class="hlab">${DAYS[wd]}</div>` +
+    row.map((v,hr)=>`<div class="hcell" title="${DAYS[wd]} ${String(hr).padStart(2,"0")}:00 — ${fmtN(v)} orders" style="background:${mixc("#eef6f4","#0f766e", max?Math.sqrt(v/max):0)}"></div>`).join("") + `</div>`; });
+  document.getElementById("heatmap").innerHTML = html;
+  document.getElementById("heatNote").innerHTML =
+    `Peak in this selection: <strong>${DAYS[pk[0]]} ${String(pk[1]).padStart(2,"0")}:00 — ${fmtN(pk[2])} orders</strong>. ` +
+    `In the full dataset, 62.0% of orders are placed between 09:00 and 18:00 and only 4.8% between midnight and 06:00; weekends take 23.0% of orders, with a Sunday-evening bump. Follows the period and state slicers.`;
+}
+
+/* funnel (static — all 99,441 orders by design) */
+function drawFunnel(){
+  const f = DATA.funnel;
+  const stages = [["Orders placed", f.created, "#0b5a51"], ["Approved", f.approved, "#0f766e"],
+                  ["Shipped to customer", f.shipped, "#178a7d"], ["Delivered", f.delivered, "#3d9a8f"]];
+  let html = stages.map((s,i)=>`${i?`<div class="fconv">▼ ${(s[1]/stages[i-1][1]*100).toFixed(1)}% continue</div>`:""}` +
+    `<div class="fstage" style="width:${Math.max(38, s[1]/f.created*100).toFixed(1)}%;background:${s[2]}"><div class="fv">${fmtN(s[1])}</div><div class="fl">${s[0]} · ${(s[1]/f.created*100).toFixed(1)}% of placed</div></div>`).join("");
+  html += `<div class="fstage" style="width:100%;background:#fdecec;color:#b91c1c;margin-top:6px"><div class="fl" style="font-size:12.5px;font-weight:700;opacity:1">✕ Canceled — ${fmtN(f.canceled)} orders (${(f.canceled/f.created*100).toFixed(1)}%) exit the pipeline</div></div>`;
+  document.getElementById("funnel").innerHTML = html;
+}
+
+/* waterfall (Chart.js floating bars; state slicer applies) */
+let wfChart;
+function drawWaterfall(){
+  const a17 = DATA.catFull[`2017|${selState}`], a18 = DATA.catFull[`2018|${selState}`];
+  if(!a17 || !a18) return;
+  const t17 = a17.reduce((a,v)=>a+v,0), t18 = a18.reduce((a,v)=>a+v,0);
+  const dl = DATA.allCategories.map((c,i)=>[c, a18[i]-a17[i]]).sort((x,y)=>y[1]-x[1]);
+  const steps = [...dl.slice(0,5).map(p=>({l:CATNAME(p[0]), d:p[1], k:"g"})),
+                 {l:`Other ${dl.length-8} categories`, d:dl.slice(5,-3).reduce((a,p)=>a+p[1],0), k:"o"},
+                 ...dl.slice(-3).map(p=>({l:CATNAME(p[0]), d:p[1], k:"l"}))];
+  let run = t17;
+  const data = [[0,t17]], cols = ["#687672"], tips = [`${fmtFull(t17)} — 2017 total`];
+  steps.forEach(s=>{ const a = run, b = run + s.d;
+    data.push([Math.min(a,b), Math.max(a,b)]);
+    cols.push(s.k==="g" ? "#059669" : s.k==="l" ? "#dc2626" : AMBER);
+    tips.push(`${s.l}: ${s.d>=0?"+":"−"}${fmtFull(Math.abs(s.d))}`); run = b; });
+  data.push([0,t18]); cols.push("#687672"); tips.push(`${fmtFull(t18)} — 2018 total (Jan–Aug)`);
+  document.getElementById("wfTitle").textContent =
+    `Waterfall — what moved revenue, 2017 → 2018${selState!=="ALL" ? " · "+DATA.stateNames[selState] : ""}`;
+  if(wfChart) wfChart.destroy();
+  wfChart = new Chart(document.getElementById("wfChart"), {type:"bar",
+    data:{labels:["2017", ...steps.map(s=>s.l), "2018"], datasets:[{data, backgroundColor:cols, borderRadius:4}]},
+    options:{responsive:true, maintainAspectRatio:false,
+      scales:{y:{ticks:{callback:v=>fmtR(v)}}, x:{grid:{display:false}, ticks:{font:{size:10}, maxRotation:38, minRotation:38}}},
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:(t)=>tips[t.dataIndex]}}}}});
+}
+
+/* word cloud (static — full delivered-order review corpus) */
+function drawCloud(){
+  const wc = DATA.wordCloud, max = wc.words.length ? wc.words[0].n : 1;
+  document.getElementById("wordCloud").innerHTML = wc.words.map((w,i)=>{
+    const col = i<3 ? "#0b5a51" : i<10 ? "#0f766e" : i<22 ? "#3d9a8f" : "#79a89f";
+    return `<span title="${w.w} — ${fmtN(w.n)} mentions" style="font-size:${(11+24*Math.sqrt(w.n/max)).toFixed(1)}px;color:${i%11===7?AMBER:col}">${w.w}</span>`; }).join("");
+}
+
 function refresh(){
   document.getElementById("kpis").innerHTML = kpiHTML();
   drawTrend(); drawStates(); drawCats(); drawSeason(); drawDeliv(); drawPay(); drawWhen(); drawCum();
+  drawMap(); drawTreemap(); drawHeat(); drawWaterfall();
 }
 refresh();
+drawFunnel(); drawCloud();
+let rszT; window.addEventListener("resize", ()=>{ clearTimeout(rszT); rszT = setTimeout(()=>{ mapSize = ""; drawMap(); drawTreemap(); }, 200); });
 </script>
 </body>
 </html>

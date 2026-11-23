@@ -37,10 +37,12 @@ Everything needed to rebuild this as a native Power BI report sits in `powerbi/`
   freight share, AOV, delivery and on-time %, review score, payment mix and
   installments, YoY and cumulative time intelligence, state/category ranks,
   repeat-customer rate)
-- `powerbi/QUESTIONS.md` — 14 business questions, each solved with a
+- `powerbi/QUESTIONS.md` — 20 business questions, each solved with a
   different Power BI visual type (KPI cards, line, clustered column, bar,
   donut, scatter, waterfall, treemap, filled map, matrix, gauge, area,
-  ribbon, decomposition tree), with the verified answers
+  ribbon, decomposition tree, plus a 2026-11-23 retrofit: choropleth,
+  category treemap, weekday×hour heatmap, funnel, category waterfall and
+  review word cloud), with the verified answers
 - `powerbi/layout_spec.md` — page-by-page layout in modern end-to-end
   project style: slicer header, KPI row, bookmark metric switching,
   drill-through state page, navigation buttons, exact color palette
