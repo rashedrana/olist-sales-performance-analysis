@@ -176,6 +176,68 @@ Selected Category =
 SELECTEDVALUE ( DimProduct[CategoryEN], "All categories" )
 ```
 
+## Retrofit measures (Q15–Q20, added 2026-11-23)
+
+```dax
+State AOV =
+DIVIDE ( [Total Revenue], [Delivered Orders] )
+```
+(Choropleth Q15: map [Total Revenue] by DimState[StateCode]; the AOV flip
+uses this measure on the same visual's tooltip / a companion bar.)
+
+```dax
+Category Revenue Share % =
+DIVIDE ( [Total Revenue], CALCULATE ( [Total Revenue], ALL ( DimProduct[CategoryEN] ) ) ) * 100
+```
+(Treemap Q16: [Total Revenue] by DimProduct[CategoryEN]; share labels use
+this measure.)
+
+```dax
+Orders Placed =
+COUNTROWS ( FactOrders )
+```
+
+```dax
+Delivered Conversion % =
+DIVIDE ( [Delivered Orders], [Orders Placed] ) * 100
+```
+(Funnel Q18: stages Placed → Delivered use [Orders Placed] and
+[Delivered Orders]; [Canceled Orders] already exists above. The approved /
+shipped milestones come from the source timestamps `order_approved_at` and
+`order_delivered_carrier_date`, which the star schema does not carry — add
+them as columns on FactOrders before import if the funnel needs all four
+stages in Power BI. The web edition reads them from the raw orders table.)
+
+```dax
+Revenue 2017 =
+CALCULATE ( [Total Revenue], DimDate[Year] = 2017 )
+```
+
+```dax
+Revenue 2018 =
+CALCULATE ( [Total Revenue], DimDate[Year] = 2018 )
+```
+
+```dax
+Revenue Change 2017-18 =
+[Revenue 2018] - [Revenue 2017]
+```
+(Waterfall Q19: waterfall visual by DimProduct[CategoryEN] with
+[Revenue Change 2017-18], totals pinned by [Revenue 2017] / [Revenue 2018].)
+
+Heatmap Q17 needs purchase *hour*: the star schema keeps the purchase date
+(DimDate[Weekday] covers the rows of the heatmap) but not the time of day.
+Add an `Hour` column to FactOrders from `order_purchase_timestamp` before
+import (or a small DimTime table); the measure on the visual is simply
+[Delivered Orders].
+
+Word cloud Q20 uses the WordCloud custom visual over the review comment
+text. Review *text* is not in the star schema (only the order's mean
+ReviewScore), so import `olist_order_reviews_dataset.csv` as a standalone
+table if the cloud is needed in Power BI; no DAX is involved — the visual
+counts words itself. The web edition tokenises the 39,073 delivered-order
+comments directly (Portuguese stopwords removed).
+
 ---
 
 Notes

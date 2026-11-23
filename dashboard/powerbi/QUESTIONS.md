@@ -1,5 +1,5 @@
 # Business Questions & Chart Problem-Solving
-## Olist Sales Performance Dashboard — 14 questions, 14 visual types
+## Olist Sales Performance Dashboard — 20 questions, 20 visual types
 
 Dataset: Brazilian E-Commerce Public Dataset by Olist (Kaggle, CC BY-NC-SA 4.0) —
 **99,441 orders · 112,650 order items · 103,886 payment rows · 99,224 reviews ·
@@ -152,3 +152,95 @@ clustered column ✓ · bar ✓ · donut ✓ · scatter/bubble ✓ · waterfall 
 treemap ✓ · filled map ✓ · matrix ✓ · gauge ✓ · area ✓ · ribbon ✓ ·
 decomposition tree ✓ — plus slicers, bookmarks and drill-through
 (layout spec).
+
+---
+
+## Retrofit — six more questions (Q15–Q20, added 2026-11-23)
+
+Six advanced visual types added to the web edition, each answering a new
+question. Same delivered-orders scope (96,478) unless a question says
+otherwise; every figure recomputed from `data/` and cross-checked against
+the star-schema CSVs.
+
+**Q15. Where is the money on the map — and does the revenue map match the
+basket-size map?**
+Visual: **Choropleth map** (item revenue by customer state, IBGE boundaries).
+Answer: The revenue map is a one-state story: **São Paulo R$5,067,633
+(38.3%) is larger than the bottom 24 states combined (R$4,841,732)**, and
+13 of the 27 states each hold under 1% of revenue (Roraima last at R$7,057).
+But the basket map inverts it: average order value is **highest in Paraíba
+(R$217.77)**, then Amapá (R$199.62), Acre (R$199.14) and Alagoas (R$198.63),
+and **lowest in São Paulo (R$125.12)** — below the national R$137.04, with
+Espírito Santo (R$134.66), Paraná (R$135.30) and Rio Grande do Sul (R$136.37)
+just above it. Far-from-the-Southeast customers order rarely but big:
+freight makes small baskets uneconomic (compare Q14's freight burden).
+
+**Q16. What is the revenue actually made of?**
+Visual: **Treemap** (item revenue by product category, top 15 + other).
+Answer: The **top 15 of 74 categories hold R$10,093,410 — 76.3% of all
+revenue**; health & beauty is the largest single block at R$1,233,132 (9.3%)
+and the top 3 together are 25.9%. The surprise is the tail: the **59
+remaining categories sum to R$3,128,088 (23.7%) — 2.5× the biggest single
+category** — so assortment breadth, not just the hits, is a quarter of the
+business.
+
+**Q17. When exactly does demand happen, hour by hour?**
+Visual: **Heatmap** (delivered orders by weekday × hour of purchase).
+Answer: Demand is a weekday-afternoon phenomenon. The single busiest cell
+is **Tuesday 14:00 with 1,095 orders**; Monday is the busiest day overall
+(15,701 orders) and the week fades steadily to Saturday's low (10,555).
+**62.0% of all orders are placed between 09:00 and 18:00**, only 4.8%
+between midnight and 06:00. Weekends still take 23.0% of orders, and Sunday
+evening out-shops Saturday evening (Sunday 20:00: 944 orders vs Saturday
+20:00: 708) — the second shopping shift of the week starts on Sunday night.
+
+**Q18. How many orders leak out of the pipeline?**
+Visual: **Funnel chart** (order pipeline milestones, **all 99,441 orders** —
+this question deliberately leaves the delivered scope, which would hide the
+leaks).
+Answer: Placed **99,441** → approved **99,281 (99.8%)** → shipped
+**97,658 (98.2%)** → delivered **96,478 (97.0%)**. The leaks: 160 orders
+were never approved; **1,637 approved orders never shipped** (most
+cancellations die here); **1,182 orders handed to a carrier had not
+reached the customer** at the snapshot. (Stage-to-stage differences are
+14 and 2 smaller respectively — 14 orders carry a carrier date but no
+approval timestamp, and 2 delivered orders lack a carrier timestamp in
+the source.) **Canceled: 625 orders (0.6%)**, shown alongside the funnel. The
+remaining 2,338 orders (2.4%) were still in the pipeline at the October
+2018 snapshot — 1,107 shipped, 609 unavailable, 314 invoiced, 301
+processing, 5 created, 2 approved. End-to-end completion: 97.0%.
+
+**Q19. Bridge 2017 → 2018: which categories built the growth, and which
+taxed it?**
+Visual: **Waterfall chart** (revenue bridge by category contribution;
+construction: top 5 gainers and top 3 decliners individually, the other 66
+categories netted; categories present in only one year are zero-filled, so
+the bridge closes exactly).
+Answer: Revenue rose from **R$5,962,902 (2017) to R$7,218,125 (Jan–Aug
+2018), +R$1,255,223**. The builders: health & beauty **+R$281,892**,
+watches & gifts **+R$212,244**, housewares **+R$169,305**, auto
+**+R$108,738**, computers & accessories **+R$104,483** — and the netted
+other-66 bucket adds **+R$757,042**, so growth was broad, not just five
+hits. The tax: cool stuff **−R$153,671**, toys **−R$130,933** and computers
+**−R$93,877**. (Companion to Q7: same bridge, drawn as a waterfall with the
+long tail netted instead of listed.)
+
+**Q20. What do customers actually talk about in their reviews?**
+Visual: **Word cloud** (word frequency in review comments, Portuguese
+stopwords removed).
+Answer: 39,073 of the delivered orders carry a written comment (40.5% of
+review rows), with 14,162 distinct words after stopword removal. The
+vocabulary is logistics, not products: **produto** (product) 17,237
+mentions, then **prazo** (deadline) 8,262, **entrega** (delivery) 6,206,
+**antes** (early) 5,592, **chegou** (arrived) 5,396, **recebi** (I received)
+4,749, **bom** (good) 4,568, **recomendo** (I recommend) 4,275. And the
+sentiment split matches Q6: comments mentioning *antes* average **4.69
+stars** and *recomendo* 4.55, while comments about the *produto* itself
+average just **3.60** — praise is earned by the delivery, complaints land
+on the product.
+
+---
+
+Retrofit coverage: choropleth ✓ · treemap (by category) ✓ · heatmap ✓ ·
+funnel ✓ · waterfall (category bridge) ✓ · word cloud ✓ — 20 questions in
+total, each with its own visual type.
