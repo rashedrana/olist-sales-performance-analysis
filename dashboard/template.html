@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Olist Sales Performance Dashboard — 96,478 Orders, R$13.2M Revenue, 2016–2018</title>
+<meta name="description" content="Interactive sales-performance dashboard on the Olist Brazilian E-Commerce dataset: R$13.2M item revenue across 96,478 delivered orders, 27 states and 74 product categories, 2016–2018 — revenue, delivery speed, review scores, payments and the Black Friday spike. Real public data from Olist (Kaggle). By Rashed Rana.">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#f5f8f7; --card:#ffffff; --ink:#14201d; --muted:#687672; --border:#dde7e3;
+  --accent:#0f766e; --accent2:#d97706; --good:#059669; --bad:#dc2626;
+  --shadow:0 6px 22px rgba(10,50,45,.08); --radius:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+.wrap{max-width:1240px;margin:0 auto;padding:22px 20px 46px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between;margin-bottom:16px}
+h1{font-size:25px;line-height:1.2}
+h1 .thin{color:var(--accent)}
+.sub{color:var(--muted);font-size:13px;margin-top:4px}
+.links{display:flex;gap:8px}
+.links a{font-size:12px;font-weight:600;border:1px solid var(--border);background:var(--card);padding:7px 12px;border-radius:999px;color:var(--ink);text-decoration:none}
+.links a:hover{border-color:var(--accent);color:var(--accent)}
+.panel{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;margin-bottom:14px}
+.panel h3{font-size:13px;letter-spacing:1.1px;color:var(--muted);margin-bottom:10px;text-transform:uppercase}
+.controls{display:grid;grid-template-columns:1.1fr 1fr 1fr 1.1fr;gap:18px}
+.btnrow{display:flex;gap:7px;flex-wrap:wrap}
+.cbtn{border:1px solid var(--border);background:var(--card);color:var(--ink);font-size:13px;padding:8px 14px;border-radius:999px;cursor:pointer;font-weight:600}
+.cbtn.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.cbtn.tgl.on{background:var(--accent2);border-color:var(--accent2)}
+select.cbtn{appearance:none;padding-right:12px;max-width:100%}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:14px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px}
+.kpi .v{font-size:23px;font-weight:800}
+.kpi .u{font-size:12px;color:var(--muted);font-weight:600}
+.kpi .l{font-size:11.5px;color:var(--muted);margin-top:2px}
+.kpi .d{font-size:11.5px;font-weight:700;margin-top:6px}
+.d.up{color:var(--good)} .d.dn{color:var(--bad)} .d.flat{color:var(--muted)}
+.grid2{display:grid;grid-template-columns:1.6fr 1fr;gap:14px}
+.grid2b{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.chartbox{position:relative;height:300px}
+.chartbox.sm{height:262px}
+.note{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.55}
+footer{color:var(--muted);font-size:12px;line-height:1.7;margin-top:18px}
+footer a{color:var(--accent)}
+@media (max-width:980px){ .kpis{grid-template-columns:repeat(3,1fr)} .controls,.grid2,.grid2b{grid-template-columns:1fr} }
+@media (max-width:560px){ .kpis{grid-template-columns:repeat(2,1fr)} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>Olist Sales Performance <span class="thin">Dashboard</span></h1>
+      <div class="sub">R$13.2M of item revenue, 96,478 delivered orders, 27 states and 74 product categories · Brazil, Sep 2016 – Aug 2018 · Data: Olist Brazilian E-Commerce Public Dataset (Kaggle, CC BY-NC-SA 4.0)</div>
+    </div>
+    <div class="links">
+      <a href="https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce" target="_blank" rel="noopener">Dataset (Kaggle)</a>
+      <a href="https://rashedrana.github.io" target="_blank" rel="noopener">Portfolio</a>
+    </div>
+  </header>
+
+  <!-- ============ SLICERS ============ -->
+  <div class="panel">
+    <div class="controls">
+      <div>
+        <h3>Period</h3>
+        <div class="btnrow" id="yearBtns">
+          <button class="cbtn on" data-y="ALL">All</button>
+          <button class="cbtn" data-y="2016">2016</button>
+          <button class="cbtn" data-y="2017">2017</button>
+          <button class="cbtn" data-y="2018">2018</button>
+        </div>
+      </div>
+      <div>
+        <h3>Customer state</h3>
+        <select class="cbtn" id="stateSel"></select>
+      </div>
+      <div>
+        <h3>Product category</h3>
+        <select class="cbtn" id="catSel"></select>
+      </div>
+      <div>
+        <h3>Trend chart shows</h3>
+        <div class="btnrow" id="metricBtns">
+          <button class="cbtn on" data-m="rev">Revenue</button>
+          <button class="cbtn" data-m="orders">Orders</button>
+          <button class="cbtn" data-m="aov">Avg order value</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ KPI CARDS ============ -->
+  <div class="kpis" id="kpis"></div>
+
+  <!-- ============ CHARTS ROW 1 ============ -->
+  <div class="grid2">
+    <div class="panel">
+      <h3 id="trendTitle">Item revenue per month</h3>
+      <div class="chartbox"><canvas id="trendChart"></canvas></div>
+      <div class="note">The marketplace ramps through 2017 and spikes in <strong>November 2017 (Black Friday)</strong> — R$987,765 of revenue and 7,289 orders, +63% more orders than October. 2016 covers Sep–Dec only (with a near-empty November, a known gap in the source), and the delivered-order view ends in Aug 2018.</div>
+    </div>
+    <div class="panel">
+      <h3 id="stateTitle">Revenue by customer state — top 12</h3>
+      <div class="chartbox"><canvas id="stateChart"></canvas></div>
+      <div class="note">Click a bar to make that state the main view. São Paulo alone is 38.3% of all revenue; the top 3 states hold 63.4%.</div>
+    </div>
+  </div>
+
+  <!-- ============ CHARTS ROW 2 ============ -->
+  <div class="grid2b">
+    <div class="panel">
+      <h3 id="catTitle">Revenue by product category</h3>
+      <div class="chartbox sm"><canvas id="catChart"></canvas></div>
+      <div class="note">Click a bar to slice the whole dashboard to that category. Health &amp; beauty leads on revenue (R$1.23M, 9.3%); bed, bath &amp; table leads on orders (9,272). The top 10 of 74 categories take 62.4% of revenue.</div>
+    </div>
+    <div class="panel">
+      <h3>Seasonality — revenue by calendar month</h3>
+      <div class="chartbox sm"><canvas id="seasonChart"></canvas></div>
+      <div class="note">All months in the selected period combined. November towers over the year (Black Friday); December stays strong, January is the hangover.</div>
+    </div>
+  </div>
+
+  <!-- ============ CHARTS ROW 3 ============ -->
+  <div class="grid2b">
+    <div class="panel">
+      <h3>Delivery speed vs review score</h3>
+      <div class="chartbox sm"><canvas id="delivChart"></canvas></div>
+      <div class="note" id="delivNote">Bubble size = orders in the delivery-time band. Reviews fall steadily as delivery slows — and orders delivered late (after the promised date) average 2.57 stars vs 4.29 for on-time orders across the full dataset.</div>
+    </div>
+    <div class="panel">
+      <h3>Payment mix — share of amount paid</h3>
+      <div class="chartbox sm"><canvas id="payChart"></canvas></div>
+      <div class="note">Follows the period and state filters. Credit cards carry 78.5% of all money paid; the average credit-card order is split into 3.5 installments, and 67% of card orders use more than one.</div>
+    </div>
+  </div>
+
+  <!-- ============ CHARTS ROW 4 ============ -->
+  <div class="grid2b">
+    <div class="panel">
+      <h3 id="whenTitle">When do people order? — by weekday</h3>
+      <div style="margin-bottom:8px" class="btnrow" id="whenBtns">
+        <button class="cbtn on" data-w="weekday">Weekday</button>
+        <button class="cbtn" data-w="hour">Hour of day</button>
+      </div>
+      <div class="chartbox sm"><canvas id="whenChart"></canvas></div>
+      <div class="note">Monday is the busiest day (15,701 orders), Saturday the quietest (10,555); ordering peaks at 16:00 and nearly stops between 03:00 and 05:00.</div>
+    </div>
+    <div class="panel">
+      <h3>Cumulative item revenue</h3>
+      <div class="chartbox sm"><canvas id="cumChart"></canvas></div>
+      <div class="note">In the full view, cumulative revenue crosses R$10M in May 2018 — 20 months after the first orders — and ends at R$13.2M.</div>
+    </div>
+  </div>
+
+  <footer>
+    Built by <strong>Rashed Rana</strong> as Project 4 of his Power BI dashboard series.
+    This web edition mirrors the Power BI report (star-schema model, DAX measures and page layout
+    in this project under <code>dashboard/powerbi/</code>); 14 business questions, each answered with a
+    different Power BI visual type, are in <code>dashboard/powerbi/QUESTIONS.md</code>.
+    Data: <a href="https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce" target="_blank" rel="noopener">Brazilian E-Commerce Public Dataset by Olist</a>
+    (Kaggle, CC BY-NC-SA 4.0), downloaded from a public GitHub mirror and verified table by table
+    (99,441 orders · 112,650 order items · 103,886 payments · 99,224 reviews).
+    <strong>Scope, stated openly:</strong> every figure uses <em>delivered</em> orders only — 96,478 of the
+    99,441 orders (97.0%); the 625 canceled orders and the orders still in transit at the October 2018
+    snapshot are excluded, so purchase months run Sep 2016 – Aug 2018. Revenue is item price only;
+    freight is shown separately (16.6% on top of item revenue). Delivery and review figures are
+    order-level; an order containing several categories counts once in each of them.
+    The geolocation table (1,000,163 ZIP-prefix rows) is ZIP-level aggregates and is not charted.
+  </footer>
+</div>
+
+<script>
+const DATA = /*__DATA__*/{};
+const ACCENT = "#0f766e", AMBER = "#d97706";
+const MLAB = DATA.monthLabels, MONTHS = DATA.months;
+const CATNAME = c => c==="Other" ? "All other categories" : c.split("_").map(w=>w[0].toUpperCase()+w.slice(1)).join(" ");
+const PAYNAME = {credit_card:"Credit card", boleto:"Boleto", voucher:"Voucher", debit_card:"Debit card", not_defined:"Not defined"};
+const PAYCOLORS = {credit_card:"#0f766e", boleto:"#d97706", voucher:"#0891b2", debit_card:"#65a30d", not_defined:"#a8a29e"};
+const ZERO = {rev:0, freight:0, items:0, orders:0, dsum:0, dcnt:0, ssum:0, scnt:0, late:0,
+              mrev:Array(24).fill(0), mord:Array(24).fill(0), bk:[[0,0],[0,0],[0,0],[0,0],[0,0],[0,0]]};
+let selYear = "ALL", selState = "ALL", selCat = "ALL", metric = "rev", whenMode = "weekday";
+
+Chart.defaults.font.family = "-apple-system,'Segoe UI',Roboto,sans-serif";
+Chart.defaults.color = "#687672";
+
+const cell = (y,s,c) => DATA.cells[`${y}|${s}|${c}`] || ZERO;
+const cur = () => cell(selYear, selState, selCat);
+const fmtR = v => v>=1e6 ? "R$ "+(v/1e6).toFixed(2)+"M" : v>=1e3 ? "R$ "+Math.round(v/1e3)+"k" : "R$ "+Math.round(v);
+const fmtFull = v => "R$ " + Math.round(v).toLocaleString("en-US");
+const fmtN = v => Math.round(v).toLocaleString("en-US");
+const monthIdxForYear = y => y==="ALL" ? MONTHS.map((_,i)=>i) : MONTHS.map((m,i)=>m.startsWith(y)?i:-1).filter(i=>i>=0);
+
+/* ---------- controls ---------- */
+const stateSel = document.getElementById("stateSel");
+stateSel.innerHTML = `<option value="ALL">All Brazil</option>` +
+  DATA.states.map(s=>`<option value="${s}">${DATA.stateNames[s]} (${s})</option>`).join("");
+stateSel.onchange = () => { selState = stateSel.value; refresh(); };
+const catSel = document.getElementById("catSel");
+catSel.innerHTML = `<option value="ALL">All categories</option>` +
+  DATA.categories.map(c=>`<option value="${c}">${CATNAME(c)}</option>`).join("");
+catSel.onchange = () => { selCat = catSel.value; refresh(); };
+document.querySelectorAll("#yearBtns .cbtn").forEach(b=>{
+  b.onclick = ()=>{ selYear = b.dataset.y; document.querySelectorAll("#yearBtns .cbtn").forEach(x=>x.classList.toggle("on",x===b)); refresh(); };
+});
+document.querySelectorAll("#metricBtns .cbtn").forEach(b=>{
+  b.onclick = ()=>{ metric = b.dataset.m; document.querySelectorAll("#metricBtns .cbtn").forEach(x=>x.classList.toggle("on",x===b)); drawTrend(); };
+});
+document.querySelectorAll("#whenBtns .cbtn").forEach(b=>{
+  b.onclick = ()=>{ whenMode = b.dataset.w; document.querySelectorAll("#whenBtns .cbtn").forEach(x=>x.classList.toggle("on",x===b)); drawWhen(); };
+});
+
+/* ---------- KPI cards ---------- */
+function prevCell(){
+  if(selYear==="2017") return cell("2016", selState, selCat);
+  if(selYear==="2018") return cell("2017", selState, selCat);
+  if(selYear==="ALL")  return cell("2017", selState, selCat); // delta labelled 2018 vs 2017 via cur18 below
+  return null;
+}
+function deltaPct(c, p, goodUp, suffix){
+  if(!p || !p.orders) return `<div class="d flat">■ no earlier period</div>`;
+  const d = (c - p) ;
+  const pct = p!==0 && suffix==="%" ? d/Math.abs(p)*100 : d;
+  const val = suffix==="%" ? pct : d;
+  if(Math.abs(val) < 0.05) return `<div class="d flat">■ ${val.toFixed(1)}${suffix} ${deltaLabel()}</div>`;
+  const up = val > 0, cls = (up === goodUp) ? "up" : "dn";
+  return `<div class="d ${cls}">${up?"▲":"▼"} ${val>0?"+":""}${val.toFixed(1)}${suffix} ${deltaLabel()}</div>`;
+}
+function deltaLabel(){
+  if(selYear==="ALL") return "2018 vs 2017";
+  return "vs " + (selYear==="2017" ? "2016" : "2017");
+}
+function kpiHTML(){
+  const c = cur();
+  let p = prevCell(), curForDelta = c;
+  if(selYear==="ALL"){ curForDelta = cell("2018", selState, selCat); }
+  if(selYear==="2016") p = null;
+  const aov = c.orders ? c.rev/c.orders : 0, paov = p && p.orders ? p.rev/p.orders : 0;
+  const days = c.dcnt ? c.dsum/c.dcnt : 0, pdays = p && p.dcnt ? p.dsum/p.dcnt : 0;
+  const score = c.scnt ? c.ssum/c.scnt : 0, pscore = p && p.scnt ? p.ssum/p.scnt : 0;
+  const fsh = c.rev ? c.freight/c.rev*100 : 0, pfsh = p && p.rev ? p.freight/p.rev*100 : 0;
+  const dRev = selYear==="ALL" ? deltaPct(curForDelta.rev, p?p.rev:0, true, "%") : deltaPct(c.rev, p?p.rev:0, true, "%");
+  const dOrd = selYear==="ALL" ? deltaPct(curForDelta.orders, p?p.orders:0, true, "%") : deltaPct(c.orders, p?p.orders:0, true, "%");
+  const dAov = selYear==="ALL" ? deltaPct(curForDelta.orders?curForDelta.rev/curForDelta.orders:0, paov, true, "%") : deltaPct(aov, paov, true, "%");
+  const cards = [];
+  cards.push(`<div class="kpi"><div><span class="v">${fmtR(c.rev)}</span></div><div class="l">Item revenue (delivered orders)</div>${dRev}</div>`);
+  cards.push(`<div class="kpi"><div><span class="v">${fmtN(c.orders)}</span></div><div class="l">Delivered orders</div>${dOrd}</div>`);
+  cards.push(`<div class="kpi"><div><span class="v">${fmtFull(aov)}</span></div><div class="l">Average order value</div>${dAov}</div>`);
+  cards.push(`<div class="kpi"><div><span class="v">${days?days.toFixed(1):"—"}</span> <span class="u">days</span></div><div class="l">Avg delivery time</div>${deltaPct(days, pdays, false, " d")}</div>`);
+  cards.push(`<div class="kpi"><div><span class="v">${score?score.toFixed(2):"—"}</span> <span class="u">/ 5</span></div><div class="l">Avg review score</div>${deltaPct(score, pscore, true, "")}</div>`);
+  cards.push(`<div class="kpi"><div><span class="v">${fsh?fsh.toFixed(1):"—"}</span> <span class="u">%</span></div><div class="l">Freight share of revenue</div>${deltaPct(fsh, pfsh, false, " pp")}</div>`);
+  return cards.join("");
+}
+
+/* ---------- charts ---------- */
+let trendChart, stateChart, catChart, seasonChart, delivChart, payChart, whenChart, cumChart;
+const METRIC_LABEL = {rev:"Item revenue per month", orders:"Delivered orders per month", aov:"Average order value per month"};
+function drawTrend(){
+  const c = cur(), idx = monthIdxForYear(selYear);
+  const labels = idx.map(i=>MLAB[i]);
+  const data = idx.map(i=> metric==="rev" ? c.mrev[i] : metric==="orders" ? c.mord[i] : (c.mord[i] ? c.mrev[i]/c.mord[i] : 0));
+  document.getElementById("trendTitle").textContent = METRIC_LABEL[metric];
+  if(trendChart) trendChart.destroy();
+  trendChart = new Chart(document.getElementById("trendChart"), {type:"line",
+    data:{labels, datasets:[{data, borderColor:ACCENT, backgroundColor:"rgba(15,118,110,.12)", fill:true,
+      borderWidth:2.5, pointRadius:0, pointHoverRadius:4, tension:.25}]},
+    options:{responsive:true, maintainAspectRatio:false, interaction:{mode:"index", intersect:false},
+      scales:{y:{grid:{color:"#e6efec"}, ticks:{callback:v=>metric==="orders"?fmtN(v):fmtR(v)}}, x:{grid:{display:false}, ticks:{maxTicksLimit:12}}},
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:(t)=> metric==="orders" ? fmtN(t.parsed.y)+" orders" : fmtFull(t.parsed.y)}}}}});
+}
+function drawStates(){
+  const pairs = DATA.states.map(s=>[s, cell(selYear, s, selCat).rev]).sort((a,b)=>b[1]-a[1]).slice(0,12);
+  document.getElementById("stateTitle").textContent = "Revenue by customer state — top 12";
+  if(stateChart) stateChart.destroy();
+  stateChart = new Chart(document.getElementById("stateChart"), {type:"bar",
+    data:{labels:pairs.map(p=>p[0]), datasets:[{data:pairs.map(p=>p[1]),
+      backgroundColor:pairs.map(p=>p[0]===selState?AMBER:ACCENT), borderRadius:6}]},
+    options:{responsive:true, maintainAspectRatio:false,
+      scales:{y:{beginAtZero:true, ticks:{callback:v=>fmtR(v)}}, x:{grid:{display:false}}},
+      plugins:{legend:{display:false}, tooltip:{callbacks:{title:(t)=>DATA.stateNames[pairs[t[0].dataIndex][0]],
+        label:(t)=>fmtFull(t.parsed.y)}}},
+      onClick:(e,els)=>{ if(els.length){ selState = pairs[els[0].index][0]; stateSel.value = selState; refresh(); } }}});
+}
+function drawCats(){
+  const pairs = DATA.categories.map(c=>[c, cell(selYear, selState, c).rev]).sort((a,b)=>b[1]-a[1]);
+  if(catChart) catChart.destroy();
+  catChart = new Chart(document.getElementById("catChart"), {type:"bar",
+    data:{labels:pairs.map(p=>CATNAME(p[0])), datasets:[{data:pairs.map(p=>p[1]),
+      backgroundColor:pairs.map(p=>p[0]===selCat?AMBER:"#3d9a8f"), borderRadius:5}]},
+    options:{indexAxis:"y", responsive:true, maintainAspectRatio:false,
+      scales:{x:{ticks:{callback:v=>fmtR(v)}}, y:{grid:{display:false}, ticks:{font:{size:10.5}}}},
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:(t)=>fmtFull(t.parsed.x)}}},
+      onClick:(e,els)=>{ if(els.length){ selCat = pairs[els[0].index][0]; catSel.value = selCat; refresh(); } }}});
+}
+function drawSeason(){
+  const c = cur(), idx = monthIdxForYear(selYear);
+  const cal = Array(12).fill(0);
+  idx.forEach(i=>{ cal[(i+8)%12] += c.mrev[i]; });
+  const names = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  if(seasonChart) seasonChart.destroy();
+  seasonChart = new Chart(document.getElementById("seasonChart"), {type:"bar",
+    data:{labels:names, datasets:[{data:cal, backgroundColor:cal.map((v,i)=>i===10?AMBER:"#3d9a8f"), borderRadius:5}]},
+    options:{responsive:true, maintainAspectRatio:false,
+      scales:{y:{beginAtZero:true, ticks:{callback:v=>fmtR(v)}}, x:{grid:{display:false}}},
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:(t)=>fmtFull(t.parsed.y)}}}}});
+}
+function drawDeliv(){
+  const c = cur();
+  const mids = [2.5, 8, 13, 18, 25.5, 40], names = ["0–5 d","6–10 d","11–15 d","16–20 d","21–30 d","31+ d"];
+  const pts = c.bk.map((b,i)=> b[1] ? {x:mids[i], y:+(b[0]/b[1]).toFixed(2), r:Math.max(5, Math.sqrt(b[1])/4), n:b[1], band:names[i]} : null).filter(Boolean);
+  const lateRate = c.dcnt ? (c.late/c.dcnt*100).toFixed(1) : "—";
+  document.getElementById("delivNote").innerHTML =
+    `Bubble size = orders in the delivery-time band. In the current selection <strong>${lateRate}%</strong> of orders arrived after the promised date. ` +
+    `Across the full dataset, late orders average 2.57 stars vs 4.29 for on-time orders.`;
+  if(delivChart) delivChart.destroy();
+  delivChart = new Chart(document.getElementById("delivChart"), {type:"bubble",
+    data:{datasets:[{data:pts, backgroundColor:"rgba(15,118,110,.55)", borderColor:ACCENT}]},
+    options:{responsive:true, maintainAspectRatio:false,
+      scales:{x:{title:{display:true, text:"delivery time (days, band midpoint)"}, min:0, max:45},
+              y:{title:{display:true, text:"avg review score"}, min:1.5, max:5}},
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:(t)=>`${t.raw.band}: ${t.raw.y} stars · ${fmtN(t.raw.n)} orders`}}}}});
+}
+function drawPay(){
+  const p = DATA.payments[`${selYear}|${selState}`] || {};
+  const types = Object.keys(p).filter(t=>p[t].value>0).sort((a,b)=>p[b].value-p[a].value);
+  if(payChart) payChart.destroy();
+  payChart = new Chart(document.getElementById("payChart"), {type:"doughnut",
+    data:{labels:types.map(t=>PAYNAME[t]||t), datasets:[{data:types.map(t=>p[t].value),
+      backgroundColor:types.map(t=>PAYCOLORS[t]||"#999"), borderWidth:2, borderColor:"#fff"}]},
+    options:{responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{position:"bottom", labels:{boxWidth:11, font:{size:11}}},
+        tooltip:{callbacks:{label:(t)=>{ const tot = types.reduce((a,x)=>a+p[x].value,0);
+          return `${t.label}: ${fmtFull(t.parsed)} (${(t.parsed/tot*100).toFixed(1)}%)`; }}}}}});
+}
+function drawWhen(){
+  const w = DATA.weekdayHour[`${selYear}|${selState}`] || {weekday:Array(7).fill(0), hour:Array(24).fill(0)};
+  const isW = whenMode==="weekday";
+  const labels = isW ? ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"] : Array.from({length:24},(_,h)=>h+":00");
+  document.getElementById("whenTitle").textContent = isW ? "When do people order? — by weekday" : "When do people order? — by hour of day";
+  if(whenChart) whenChart.destroy();
+  whenChart = new Chart(document.getElementById("whenChart"), {type:"bar",
+    data:{labels, datasets:[{data:isW?w.weekday:w.hour, backgroundColor:"#3d9a8f", borderRadius:4}]},
+    options:{responsive:true, maintainAspectRatio:false,
+      scales:{y:{beginAtZero:true, ticks:{callback:v=>fmtN(v)}}, x:{grid:{display:false}, ticks:{maxTicksLimit:isW?7:12}}},
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:(t)=>fmtN(t.parsed.y)+" orders"}}}}});
+}
+function drawCum(){
+  const c = cur(), idx = monthIdxForYear(selYear);
+  let run = 0; const data = idx.map(i=>{ run += c.mrev[i]; return run; });
+  if(cumChart) cumChart.destroy();
+  cumChart = new Chart(document.getElementById("cumChart"), {type:"line",
+    data:{labels:idx.map(i=>MLAB[i]), datasets:[{data, borderColor:AMBER, backgroundColor:"rgba(217,119,6,.14)",
+      fill:true, borderWidth:2.5, pointRadius:0, pointHoverRadius:4, tension:.2}]},
+    options:{responsive:true, maintainAspectRatio:false, interaction:{mode:"index", intersect:false},
+      scales:{y:{ticks:{callback:v=>fmtR(v)}}, x:{grid:{display:false}, ticks:{maxTicksLimit:10}}},
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:(t)=>fmtFull(t.parsed.y)+" cumulative"}}}}});
+}
+function refresh(){
+  document.getElementById("kpis").innerHTML = kpiHTML();
+  drawTrend(); drawStates(); drawCats(); drawSeason(); drawDeliv(); drawPay(); drawWhen(); drawCum();
+}
+refresh();
+</script>
+</body>
+</html>
